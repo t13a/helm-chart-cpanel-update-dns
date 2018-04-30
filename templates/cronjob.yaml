@@ -1,0 +1,75 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ template "cpanel-update-dns.fullname" . }}
+  labels:
+    app: {{ template "cpanel-update-dns.name" . }}
+    chart: {{ template "cpanel-update-dns.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  schedule: "{{ .Values.cronjob.schedule }}"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: {{ template "cpanel-update-dns.name" . }}
+            release: {{ .Release.Name }}
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: {{ .Chart.Name }}
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              args:
+                {{- with .Values.cronjob.domain }}
+                - --domain
+                - '{{ . }}'
+                {{- end }}
+                {{- with .Values.cronjob.name }}
+                - --name
+                - '{{ . }}'
+                {{- end }}
+                {{- with .Values.cronjob.ttl }}
+                - --ttl
+                - '{{ . }}'
+                {{- end }}
+                {{- with .Values.cronjob.type }}
+                - --type
+                - '{{ . }}'
+                {{- end }}
+                {{- with .Values.cronjob.ip }}
+                - --ip
+                - '{{ . }}'
+                {{- end }}
+              env:
+              - name: USERNAME
+                valueFrom:
+                  secretKeyRef:
+                    name: {{ template "cpanel-update-dns.fullname" . }}
+                    key: username
+              - name: PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: {{ template "cpanel-update-dns.fullname" . }}
+                    key: password
+              - name: URL
+                valueFrom:
+                  secretKeyRef:
+                    name: {{ template "cpanel-update-dns.fullname" . }}
+                    key: url
+              resources:
+{{ toYaml .Values.resources | indent 16 }}
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+{{ toYaml . | indent 12 }}
+          {{- end }}
+          {{- with .Values.affinity }}
+          affinity:
+{{ toYaml . | indent 12 }}
+          {{- end }}
+          {{- with .Values.tolerations }}
+          tolerations:
+{{ toYaml . | indent 12 }}
+          {{- end }}
