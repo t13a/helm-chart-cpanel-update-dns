@@ -9,6 +9,7 @@ cpanel:
 
 cronjob:
   schedule: # "0 * * * *"
+  concurrencyPolicy: Forbid
   # domain:
   # name:
   # ttl:
